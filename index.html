@@ -47,9 +47,9 @@
 
         /* 加減分數字的浮動淡出動畫 (增強版) */
         @keyframes float-out-up {
-            0% { opacity: 0; transform: translate(-50%, 0px) scale(0.5); }
-            20% { opacity: 1; transform: translate(-50%, -20px) scale(1.2); }
-            100% { opacity: 0; transform: translate(-50%, -80px) scale(1); }
+            0% { opacity: 0; transform: translate(-50%, 10px) scale(0.5); }
+            15% { opacity: 1; transform: translate(-50%, -30px) scale(1.5); }
+            100% { opacity: 0; transform: translate(-50%, -100px) scale(1.2); }
         }
         
         /* --- 應用動畫類別 --- */
@@ -590,16 +590,39 @@
                 return (
                     <div className="flex-1 flex flex-col p-8 relative h-full">
                         {/* 頂部導航與進度 */}
-                        <div className="flex justify-between items-center mb-8">
-                            <button onClick={handleMainMenu} className="flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur">
+                        <div className="flex justify-between items-start mb-6 gap-4">
+                            <button onClick={handleMainMenu} className="mt-2 flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur shrink-0">
                                 <Home size={24} /> 返回主選單
                             </button>
-                            <div className="flex items-center gap-4">
+                            
+                            {/* 第二回合：置中大型計分板 */}
+                            {!isRound1 && (
+                                <div className="flex justify-center gap-6 bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-xl border border-white/60 relative z-40 animate-fade-in-down">
+                                     {HOUSES.map(house => (
+                                        <div key={house.id} className={`text-center w-28 relative ${scoreAnimations[house.id] ? 'animate-score-bump' : ''}`}>
+                                            <div className={`text-xl font-bold ${house.text}`}>{house.name}</div>
+                                            <div className="text-5xl font-black my-2">{scores[house.id]}</div>
+                                            <div className="flex justify-center gap-3 mt-3">
+                                                <button onClick={() => adjustScore(house.id, -10)} className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-all hover:scale-110 active:scale-95"><Minus size={24}/></button>
+                                                <button onClick={() => adjustScore(house.id, 10)} className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200 transition-all hover:scale-110 active:scale-95"><Plus size={24}/></button>
+                                            </div>
+                                            {/* 分數動畫浮動效果 (大型) */}
+                                            {scoreAnimations[house.id] && (
+                                                <div className={`absolute top-[-20px] left-1/2 text-6xl font-black text-stroke z-50 animate-score-float pointer-events-none ${scoreAnimations[house.id].amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                    {scoreAnimations[house.id].amount > 0 ? '+' : ''}{scoreAnimations[house.id].amount}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-2 flex flex-col items-end gap-2 shrink-0">
                                 <span className="px-6 py-2 bg-indigo-100 text-indigo-800 text-2xl font-bold rounded-full">
                                     {isRound1 ? `必答題 Set ${currentSet}` : '搶答題'}
                                     {isReviewMode && ' (回顧模式)'}
                                 </span>
-                                <span className="text-2xl font-black text-gray-500">
+                                <span className="text-2xl font-black text-gray-500 mr-2">
                                     {questionIndex + 1} / {activeQuestions.length}
                                 </span>
                             </div>
@@ -719,22 +742,6 @@
                             <button onClick={handleNext} className="flex items-center gap-2 px-8 py-4 rounded-xl text-2xl font-bold transition gradient-btn">
                                 {questionIndex === activeQuestions.length - 1 ? (isReviewMode ? '返回總結' : '完成回合') : '下一題'} <ChevronRight size={28} />
                             </button>
-                        </div>
-                        
-                        {/* 遊戲進行中顯示縮小的計分板 */}
-                        <div className="absolute bottom-4 right-8 bg-white/80 backdrop-blur rounded-2xl p-4 shadow-xl border border-white flex gap-4 transform scale-75 origin-bottom-right z-30">
-                             {HOUSES.map(house => (
-                                <div key={house.id} className="text-center w-20">
-                                    <div className={`text-sm font-bold ${house.text}`}>{house.name}</div>
-                                    <div className="text-2xl font-black">{scores[house.id]}</div>
-                                    {!isRound1 && (
-                                        <div className="flex justify-center gap-1 mt-1">
-                                            <button onClick={() => adjustScore(house.id, -10)} className="w-6 h-6 bg-red-100 text-red-600 rounded flex items-center justify-center"><Minus size={14}/></button>
-                                            <button onClick={() => adjustScore(house.id, 10)} className="w-6 h-6 bg-green-100 text-green-600 rounded flex items-center justify-center"><Plus size={14}/></button>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
                         </div>
                     </div>
                 );
