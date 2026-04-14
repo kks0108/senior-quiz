@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <!-- 設定 Viewport 以適配 iPad 及禁止縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>四社高中問答比賽</title>
+    
+    <!-- 引入 React 18 (Production 版本，適合發佈) -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 引入 Babel (用於瀏覽器端解析 JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 引入 Tailwind CSS (樣式庫) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* --- 動畫定義 --- */
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        @keyframes move-blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        
+        /* 分數變化時的卡片彈跳與發光 (增強版) */
+        @keyframes score-bump {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.1); filter: brightness(1.1); box-shadow: 0 0 20px rgba(255,255,255,0.8); }
+            100% { transform: scale(1); }
+        }
+
+        /* 加減分數字的浮動淡出動畫 (增強版) */
+        @keyframes float-out-up {
+            0% { opacity: 0; transform: translate(-50%, 0px) scale(0.5); }
+            20% { opacity: 1; transform: translate(-50%, -20px) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -80px) scale(1); }
+        }
+        
+        /* --- 應用動畫類別 --- */
+        .animate-fade-in-down { animation: fadeInDown 0.8s ease-out; }
+        .animate-fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        .animate-blob { animation: move-blob 10s infinite; }
+        .animate-score-bump { animation: score-bump 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .animate-score-float { animation: float-out-up 1s ease-out forwards; }
+        
+        /* --- 針對 iPad 投影優化：隱藏滾動條，鎖定畫面 --- */
+        body, html {
+            height: 100%;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* 禁止捲動 */
+            -ms-overflow-style: none; 
+            scrollbar-width: none; 
+            touch-action: manipulation;
+            font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
+        }
+        body::-webkit-scrollbar { display: none; }
+        
+        button:active { transform: scale(0.96); }
+
+        /* --- 全新高中主題：成熟冷靜背景 + 寶覺中學圖片 --- */
+        .custom-bg {
+            background-color: #EEF2FF; /* Indigo 50 底色 */
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Po_Kok_Secondary_School_2018.jpg/1200px-Po_Kok_Secondary_School_2018.jpg'); 
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* 卡片樣式 - 科技感/專業感懸浮 */
+        .bright-card {
+            background: rgba(255, 255, 255, 0.55); /* 降低不透明度，增強半透明毛玻璃效果 */
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            box-shadow: 0 10px 40px -10px rgba(99, 102, 241, 0.25); /* Indigo 陰影 */
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 1.5rem;
+        }
+
+        .bright-card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px -10px rgba(99, 102, 241, 0.4);
+            border-color: #818CF8;
+        }
+        
+        /* 按鈕樣式 - 靛藍色漸層 (Indigo to Deep Purple) */
+        .gradient-btn {
+            background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            transition: all 0.3s ease;
+        }
+        .gradient-btn:hover {
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.5);
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        /* 文字陰影 */
+        .text-shadow-sm {
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        /* 文字描邊，讓浮動分數更清晰 */
+        .text-stroke {
+            -webkit-text-stroke: 1.5px white;
+            paint-order: stroke fill;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* 四社顏色變數 (Tailwind Utility) - 維持不變 */
+        .house-red { @apply bg-red-500 text-white border-red-600; }
+        .house-yellow { @apply bg-yellow-400 text-white border-yellow-500; }
+        .house-blue { @apply bg-blue-500 text-white border-blue-600; }
+        .house-green { @apply bg-green-500 text-white border-green-600; }
+    </style>
+</head>
+<body class="custom-bg text-gray-800 selection:bg-indigo-200 selection:text-indigo-900 relative">
+    
+    <!-- 全局遮罩：提高文字可讀性 (冷色系半透明遮罩) -->
+    <div class="absolute inset-0 bg-slate-100/85 z-0"></div>
+
+    <!-- 動態背景裝飾：改用靛藍與紫羅蘭漸層球體 -->
+    <div class="fixed top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-indigo-400/30 rounded-full mix-blend-multiply filter blur-[80px] animate-blob z-0 pointer-events-none"></div>
+    <div class="fixed bottom-[-10%] right-[-10%] w-[45vw] h-[45vw] bg-fuchsia-400/30 rounded-full mix-blend-multiply filter blur-[80px] animate-blob animation-delay-4000 z-0 pointer-events-none"></div>
+
+    <div id="root" class="relative z-10 h-full w-full flex flex-col"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- 圖標組件 (SVG) ---
+        const IconWrapper = ({ children, size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{children}</svg>
+        );
+        const ChevronRight = (props) => <IconWrapper {...props}><path d="m9 18 6-6-6-6"/></IconWrapper>;
+        const ChevronLeft = (props) => <IconWrapper {...props}><path d="m15 18-6-6 6-6"/></IconWrapper>;
+        const Home = (props) => <IconWrapper {...props}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></IconWrapper>;
+        const BookOpen = (props) => <IconWrapper {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconWrapper>;
+        const CheckCircle = (props) => <IconWrapper {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconWrapper>;
+        const XCircle = (props) => <IconWrapper {...props}><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></IconWrapper>;
+        const Trophy = (props) => <IconWrapper {...props}><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></IconWrapper>;
+        const Zap = (props) => <IconWrapper {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></IconWrapper>;
+        const Plus = (props) => <IconWrapper {...props}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></IconWrapper>;
+        const Minus = (props) => <IconWrapper {...props}><line x1="5" y1="12" x2="19" y2="12" /></IconWrapper>;
+        const Eye = (props) => <IconWrapper {...props}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></IconWrapper>;
+        
+        // --- 四社設定 ---
+        const HOUSES = [
+            { id: 'red', name: '明社', color: 'bg-red-500', text: 'text-red-600', border: 'border-red-500', bgLight: 'bg-red-50' },
+            { id: 'yellow', name: '慧社', color: 'bg-yellow-400', text: 'text-yellow-600', border: 'border-yellow-400', bgLight: 'bg-yellow-50' },
+            { id: 'blue', name: '達社', color: 'bg-blue-500', text: 'text-blue-600', border: 'border-blue-500', bgLight: 'bg-blue-50' },
+            { id: 'green', name: '聰社', color: 'bg-green-500', text: 'text-green-600', border: 'border-green-500', bgLight: 'bg-green-50' },
+        ];
+
+        // --- 題庫數據 ---
+        const ROUND_1_DATA = {
+            A: [
+                { id: 1, category: '寶覺資訊', type: 'mc', question: '以下哪一位是寶覺中學的校監？', options: ['A. 釋僧徹 苑長', 'B. 釋演尊 法師', 'C. 許日銓 先生', 'D. 葉淑屏 女士'], correctOption: 'B' },
+                { id: 2, category: '寶覺資訊', type: 'mc', question: '寶覺中學占地面積約為多少平方米？', options: ['A. 3030平方米', 'B. 4498平方米', 'C. 5063平方米', 'D. 6698平方米'], correctOption: 'D' },
+                { id: 3, category: '學校主題', type: 'mc', question: '以下哪一項不屬於「五自教育」？', options: ['A. 自信', 'B. 自我評估', 'C. 自我形象', 'D. 自主學習'], correctOption: 'D' },
+                { id: 4, category: '學校主題', type: 'mc', question: '「慎獨」是指獨處時仍堅持守規（如無人看管仍保持安靜），這體現了哪種「五自」素養？', options: ['A. 自信', 'B. 自律', 'C. 自強', 'D. 自由'], correctOption: 'B' },
+                { id: 5, category: '校史', type: 'mc', question: '學校2000年至今共有多少位校長?', options: ['A. 2位', 'B. 3位', 'C. 4位', 'D. 5位'], correctOption: 'B' },
+                { id: 6, category: '校史', type: 'mc', question: '現在身處的校舍在哪一年落成？', options: ['A. 1999', 'B. 2000', 'C. 2001', 'D. 2002'], correctOption: 'C' },
+                { id: 7, category: '四社資訊', type: 'mc', question: '以下哪一位老師是達社本年度的新成員？', options: ['A. 盧卓賢老師', 'B. 曾綽琳老師', 'C. 尹家明老師', 'D. Miss G'], correctOption: 'A' },
+                { id: 8, category: '四社資訊', type: 'mc', question: '四社吉祥物中，哪一位是「慈心行」領袖小組的成員？', options: ['A. 聰聰', 'B. 慧慧', 'C. 明明', 'D. 達達'], correctOption: 'B' },
+                { id: 9, category: '基本法(容易)', type: 'mc', question: '香港特別行政區的財政收益，是否需要上繳給中央人民政府？', options: ['A. 是', 'B. 否', 'C. 視情況而定'], correctOption: 'B' },
+                { id: 10, category: '基本法(普通)', type: 'mc', question: '香港特別行政區立法會是由多少名議員組成？', options: ['A. 70', 'B. 80', 'C. 90', 'D. 100'], correctOption: 'C' },
+                { id: 11, category: '基本法(困難)', type: 'mc', question: '社會集團和私人是否可依法在香港特別行政區興辦各種教育事業？', options: ['A. 是', 'B. 否', 'C. 視情況而定'], correctOption: 'A' }
+            ],
+            B: [
+                { id: 1, category: '寶覺資訊', type: 'mc', question: '以下哪一項是寶覺中學校徽中包含的佛教圖騰？', options: ['A. 法輪', 'B. 吉祥結', 'C. 卍字', 'D. 卐字'], correctOption: 'C' },
+                { id: 2, category: '寶覺資訊', type: 'text', question: '位於5樓的五個班級分別是？', answer: '1B、1C、1D、2A、2B' },
+                { id: 3, category: '學校主題', type: 'mc', question: '「二十四節氣」是根據甚麼來制定的？', options: ['A. 月亮盈虧', 'B. 太陽位置', 'C. 潮汐漲退', 'D. 北斗指向'], correctOption: 'B' },
+                { id: 4, category: '學校主題', type: 'mc', question: '下星期（4月20日）將會迎來哪一個節氣？', options: ['A. 清明', 'B. 穀雨', 'C. 立夏', 'D. 小滿'], correctOption: 'B' },
+                { id: 5, category: '校史', type: 'mc', question: '寶覺義學成立初年，東蓮覺苑曾以哪種形式籌募經費？', options: ['A. 賣旗', 'B. 賣物會', 'C. 慈善演出', 'D. 社區募捐'], correctOption: 'B' },
+                { id: 6, category: '校史', type: 'mc', question: '本校創辦人張蓮覺居士的丈夫是香港首位華人爵士，他是誰？', options: ['A. 何世禮爵士', 'B. 何東爵士', 'C. 何福爵士', 'D. 何鴻燊爵士'], correctOption: 'B' },
+                { id: 7, category: '四社資訊', type: 'mc', question: '以下哪一位老師是聰社本年度的新社監？', options: ['A. 吳銘濤老師', 'B. 李晉慷老師', 'C. 林智豪老師', 'D. 徐偉嫻老師'], correctOption: 'C' },
+                { id: 8, category: '四社資訊', type: 'mc', question: '本學年慧社的社員大會在哪個地點舉行？', options: ['A. 禮堂', 'B. 演講廳', 'C. 圖書館', 'D. Home Centre'], correctOption: 'A' },
+                { id: 9, category: '基本法(容易)', type: 'mc', question: '香港特別行政區的治安是由哪一個部門負責？', options: ['A. 香港特別行政區政府', 'B. 中華人民共和國公安部', 'C. 中國人民解放軍'], correctOption: 'A' },
+                { id: 10, category: '基本法(普通)', type: 'mc', question: '香港特別行政區基本法在甚麼時候開始實施?', options: ['A. 1990年4月4日', 'B. 1997年7月1日', 'C. 1991年4月4日'], correctOption: 'B' },
+                { id: 11, category: '基本法(困難)', type: 'mc', question: '香港特別行政區最高級的法庭是哪一個法庭？', options: ['A. 香港特別行政區終審法院', 'B. 中華人民共和國最高人民法院', 'C. 香港特別行政區上訴法庭'], correctOption: 'A' }
+            ],
+            C: [
+                { id: 1, category: '寶覺資訊', type: 'mc', question: '請問校徽中間的圖案是?', options: ['A. 紫荊花', 'B. 菊花', 'C. 蘭花', 'D. 蓮花'], correctOption: 'D' },
+                { id: 2, category: '寶覺資訊', type: 'mc', question: '本校共有多少間教室？', options: ['A. 20間', 'B. 30間', 'C. 40間', 'D. 50間'], correctOption: 'B' },
+                { id: 3, category: '學校主題', type: 'mc', question: '寶覺中學推行「禪修」活動主要目的是什麼？', options: ['A. 練習武術', 'B. 增加睡眠時間', 'C. 靜心', 'D. 幫助呼吸'], correctOption: 'C' },
+                { id: 4, category: '學校主題', type: 'mc', question: '當我們在校園內遇見法師時，最恰當且具備佛教特色的問候手勢是甚麼？', options: ['A. 握手', 'B. 敬禮', 'C. 合十', 'D. 比「耶」手勢'], correctOption: 'C' },
+                { id: 5, category: '校史', type: 'mc', question: '於1951年擴充的「寶覺女子初級職業中學」主要側重於哪些學科？', options: ['A. 語文與數學', 'B. 語文與科學', 'C. 家政與木工', 'D. 家政與商科'], correctOption: 'D' },
+                { id: 6, category: '校史', type: 'mc', question: '寶覺女子中學由哪一年開始正式停辦？', options: ['A. 2000', 'B. 2001', 'C. 2002', 'D. 2003'], correctOption: 'D' },
+                { id: 7, category: '四社資訊', type: 'text', question: '本學年的陸運會在去年哪個月舉辦？', answer: '10月' },
+                { id: 8, category: '四社資訊', type: 'mc', question: '本年度陸運會男子全場總冠軍獲獎同學來自甚麼社?', options: ['A. 聰社', 'B. 慧社', 'C. 明社', 'D. 達社'], correctOption: 'D' },
+                { id: 9, category: '基本法(容易)', type: 'mc', question: '1997年7月1日開始，香港成為中華人民共和國的甚麼地方？', options: ['A. 特別行政區', 'B. 直轄市', 'C. 省'], correctOption: 'A' },
+                { id: 10, category: '基本法(普通)', type: 'mc', question: '香港特別行政區行政長官的任期為多少年？', options: ['A. 2年', 'B. 3年', 'C. 4年', 'D. 5年'], correctOption: 'D' },
+                { id: 11, category: '基本法(困難)', type: 'mc', question: '基本法全部共有多少條條文？', options: ['A. 160', 'B. 180', 'C. 200', 'D. 220'], correctOption: 'A' }
+            ],
+            D: [
+                { id: 1, category: '寶覺資訊', type: 'mc', question: '以下哪項不屬於校本課程？', options: ['A. 佛學與人生', 'B. 設計與科技', 'C. 歷史寶中尋', 'D. 攝影禪'], correctOption: 'B' },
+                { id: 2, category: '寶覺資訊', type: 'text', question: '為了促進長幼共融，說出本校為此成立的一個服務團體名稱。', answer: '長者學苑' },
+                { id: 3, category: '學校主題', type: 'mc', question: '以下哪項食物不屬於非物質文化遺產？', options: ['A. 月餅', 'B. 瓜子', 'C. 水餃', 'D. 燒賣'], correctOption: 'D' },
+                { id: 4, category: '學校主題', type: 'mc', question: '以下哪兩地方至今仍可欣賞舞火龍？', options: ['A. 大坑 及 薄扶林村', 'B. 薄扶林村 及 坑口村', 'C. 坑口村 及 大澳', 'D. 大澳 及 大坑'], correctOption: 'A' },
+                { id: 5, category: '校史', type: 'mc', question: '東蓮覺苑位於山光道多少號？', options: ['A. 12號', 'B. 13號', 'C. 14號', 'D. 15號'], correctOption: 'D' },
+                { id: 6, category: '校史', type: 'mc', question: '東蓮覺苑位於山光道的建築於哪一年列為香港法定古蹟？', options: ['A. 2014', 'B. 2015', 'C. 2016', 'D. 2017'], correctOption: 'D' },
+                { id: 7, category: '四社資訊', type: 'text', question: '說出去年12月的四社比賽活動名稱。', answer: '躲避盤比賽' },
+                { id: 8, category: '四社資訊', type: 'mc', question: '四社吉祥物中，哪一位善用學習策略，樂於反思?', options: ['A. 聰聰', 'B. 慧慧', 'C. 明明', 'D. 達達'], correctOption: 'C' },
+                { id: 9, category: '基本法(容易)', type: 'mc', question: '香港居民有沒有宗教信仰自由?', options: ['A. 有', 'B. 沒有', 'C. 視情況而定'], correctOption: 'A' },
+                { id: 10, category: '基本法(普通)', type: 'mc', question: '香港特別行政區會否實行外匯管制政策？', options: ['A. 會', 'B. 不會', 'C. 視情況而定'], correctOption: 'B' },
+                { id: 11, category: '基本法(困難)', type: 'mc', question: '香港特別行政區可否自行制定有關勞工的法律和政策？', options: ['A. 可', 'B. 不可', 'C. 視情況而定'], correctOption: 'A' }
+            ]
+        };
+
+        const ROUND_2_DATA = [
+            { id: 1, category: '地理科', type: 'mc', question: '關於中國地形特點的描述，下列哪一項是正確的？', options: ['A. 地勢東高西低，呈階梯狀分布', 'B. 全國以平原為主，山地比例極小', 'C. 地勢西高東低，呈階梯狀分布', 'D. 青藏高原位於地勢的第三級階梯'], correctOption: 'C' },
+            { id: 2, category: '視藝科', type: 'mc', question: '「普普藝術」的發源地是?', options: ['A. 澳洲', 'B. 英國及美國', 'C. 美國及加拿大', 'D. 法國'], correctOption: 'B' },
+            { id: 3, category: '歷史科', type: 'text', question: '二次世界大戰後期，美國在日本哪兩座城市投下原子彈，促成日本投降？', answer: '廣島、長崎' },
+            { id: 4, category: '歷史科', type: 'mc', question: '以下哪個姓氏不屬於「新界五大姓族」之一?', options: ['A. 文', 'B. 鄧', 'C. 彭', 'D. 洪'], correctOption: 'D' },
+            { id: 5, category: '電腦科', type: 'mc', question: '以下哪項對賦值語句的描述為正確?', options: ['A. 輸出用戶所輸入的結果的語句', 'B. 讓程式區塊重複地執行的語句', 'C. 將特定值儲存到變數中的語句', 'D. 讓程式做決定執行哪一段代碼的語句'], correctOption: 'C' },
+            { id: 6, category: '時事', type: 'mc', question: '香港在2025年與廣東及澳門，共同承辦了哪一個全國性的大型體育盛事?', options: ['A. 亞運會', 'B. 第十五屆全國運動會(全運會)', 'C. 世界大學生運動會', 'D. 東亞運'], correctOption: 'B' },
+            { id: 7, category: '地理科', type: 'mc', question: '香港的地形特徵中，哪一項描述最符合實際情況？', options: ['A. 香港島是境內地勢最低平的區域', 'B. 全境皆為平原，適合大規模農業發展', 'C. 香港沒有火山岩地形', 'D. 境內多山，平原面積狹小且主要集中在西北部'], correctOption: 'D' },
+            { id: 8, category: '中文科', type: 'text', question: '王安石《元日》末句「總把新桃換舊符」，當中的「桃」、「符」所指何物?', answer: '門上驅邪的神像，後來演變成春聯。' },
+            { id: 9, category: '時事', type: 'mc', question: '2026年中國哪一份文件將定義未來五年的經濟發展走向?', options: ['A. 全國數據清零計劃', 'B. 「十個全面」戰略', 'C. 「十五五」規劃', 'D. 「一帶一路」百年計劃'], correctOption: 'C' },
+            { id: 10, category: '時事', type: 'mc', question: '於本年2月28日美以伊爆發的戰爭中，因封鎖了哪個海峽以致全球能源供應緊張?', options: ['A. 霍爾木茲海峽', 'B. 德雷克海峽', 'C. 馬六甲海峽', 'D. 英吉利海峽'], correctOption: 'A' },
+            { id: 11, category: '中史科', type: 'text', question: '哪三人在五四運動中被視為賣國賊?', answer: '曹汝霖、章宗祥、陸宗輿' },
+            { id: 12, category: '地理科', type: 'mc', question: '中國地震頻發，主要原因是其位於哪些板塊的交界帶？', options: ['A. 納斯卡板塊與科科斯板塊', 'B. 歐亞板塊、太平洋板塊與印度板塊', 'C. 南極洲板塊與澳洲板塊', 'D. 非洲板塊與美洲板塊'], correctOption: 'B' },
+            { id: 13, category: '時事', type: 'mc', question: '「它坐落於舊機場跑道末端，擁有5萬座位的『東方之珠』主場館。」所指的是甚麼?', options: ['A. 將軍澳水上活動中心', 'B. 西九文化區演藝綜合劇場', 'C. 新大嶼山運動場', 'D. 啟德體育園'], correctOption: 'D' },
+            { id: 14, category: '電腦科', type: 'mc', question: "以下的結構化查詢語言(SQL)語句有甚麼錯處? Select * from ExamResult Order By ClassNo Where Sex='M';", options: ["A. Where 語句不應在 Order By 之後", "B. Sex與M之間不應使用等於符號", "C. 文字M不應使用 ' ' 符號包圍", "D. 語句中不應在句尾使用分號"], correctOption: 'A' },
+            { id: 15, category: '時事', type: 'mc', question: '警方的「防騙易」熱線號碼是多少?', options: ['A. 999', 'B. 18222', 'C. 1823', 'D. 81777778'], correctOption: 'B' },
+            { id: 16, category: '中史科', type: 'mc', question: '五四運動因山東問題而起，山東問題與中日簽署的哪兩份文件有關？', options: ['A. 二十一條及山東問題換文', 'B. 北京條約及雙十協定', 'C. 二十一條及雙十協定', 'D. 北京條約及山東問題換文'], correctOption: 'A' },
+            { id: 17, category: '視藝科', type: 'mc', question: '把紅、藍、黃色塑膠彩等量混合，會變成最接近以下哪一種顏色?', options: ['A. 灰色', 'B. 白色', 'C. 黑色', 'D. 啡色'], correctOption: 'D' },
+            { id: 18, category: '時事', type: 'mc', question: '立法會換屆選舉投票日一般在星期幾舉行?', options: ['A. 星期三', 'B. 星期五', 'C. 星期六', 'D. 星期日'], correctOption: 'D' },
+            { id: 19, category: '中史科', type: 'mc', question: '新中國建國後，針對地主階級的政治運動是？', options: ['A. 鎮壓反革命運動', 'B. 土地改革運動', 'C. 三反運動', 'D. 五反運動'], correctOption: 'B' },
+            { id: 20, category: '中文科', type: 'mc', question: '「雞鳴狗盜」是講述「戰國四公子」當中哪一位的故事?', options: ['A. 平原君', 'B. 信陵君', 'C. 孟嘗君', 'D. 春申君'], correctOption: 'C' },
+            { id: 21, category: '地理科', type: 'mc', question: '香港夏季經常受颱風襲擊，這類熱帶氣旋主要源自哪一個海域？', options: ['A. 地中海', 'B. 北太平洋西部', 'C. 紅海', 'D. 北冰洋'], correctOption: 'B' },
+            { id: 22, category: '佛學科', type: 'mc', question: '《心經》的「心」是什麼意思?', options: ['A. 精華', 'B. 心情', 'C. 無常', 'D. 業報'], correctOption: 'A' },
+            { id: 23, category: '地理科', type: 'mc', question: '以下哪一種不屬於構造災害?', options: ['A. 地震', 'B. 山泥傾瀉', 'C. 火山爆發', 'D. 海嘯'], correctOption: 'B' },
+            { id: 24, category: '中史科', type: 'text', question: '1936年發生的「西安事變」主要涉及「蔣」、「張」和「楊」，請說出三人的全名。', answer: '蔣介石、張學良、楊虎城' },
+            { id: 25, category: '數學科', type: 'text', question: '101² - 99² = ?', answer: '400', supplement: '(101+99)(101-99) = 200*2=400' },
+            { id: 26, category: '時事', type: 'mc', question: '根據「管制即棄塑膠」新法例，在餐廳「堂食」時，以下哪項餐具是全面禁止提供的?', options: ['A. 不鏽鋼叉', 'B. 發泡膠飯盒及膠飲管', 'C. 紙飲管', 'D. 木筷子'], correctOption: 'B' },
+            { id: 27, category: '地理科', type: 'mc', question: '香港的冬季季候風主要吹什麼風向？其性質又是如何？', options: ['A. 西南風；溫暖潮濕', 'B. 西北風；溫暖乾燥', 'C. 東北風；寒冷乾燥', 'D. 東南風；炎熱多雨'], correctOption: 'C' },
+            { id: 28, category: '電腦科', type: 'mc', question: '以下哪個是「立體聲」的英文拼寫?', options: ['A. Audio', 'B. Audacity', 'C. Stereo', 'D. Steal'], correctOption: 'C' },
+            { id: 29, category: '時事', type: 'mc', question: '2026年1月18日舉行的「渣打香港馬拉松2026」，在賽事設置上新增了哪一個項目以推廣本地長跑文化?', options: ['A. 接力100公里賽', 'B. 少年跑', 'C. 寵物陪跑賽', 'D. 負重軍事長跑'], correctOption: 'B' },
+            { id: 30, category: '物理科', type: 'mc', question: '「作用力與反作用力」屬牛頓的第幾個運動定律?', options: ['A. 牛頓第一運動定律', 'B. 牛頓第二運動定律', 'C. 牛頓第三運動定律', 'D. 牛頓第四運動定律'], correctOption: 'C' },
+            { id: 31, category: '歷史科', type: 'mc', question: '1919年巴黎和會上，三巨頭以哪一條條約嚴懲德國?', options: ['A. 《波茨坦條約》', 'B. 《凡爾賽條約》', 'C. 《國際聯約》', 'D. 《普法之約》'], correctOption: 'B' },
+            { id: 32, category: '電腦科', type: 'mc', question: '以下哪一個不是Excel 內的邏輯函數?', options: ['A. NOT', 'B. AND', 'C. MIN', 'D. IF'], correctOption: 'C' },
+            { id: 33, category: '中史科', type: 'mc', question: '「三面紅旗」包括以下哪三項？', options: ['A. 總路線、大躍進、人民公社', 'B. 超英趕美、大躍進、人民公社', 'C. 總路線、超英趕美、大躍進', 'D. 總路線、超英趕美、人民公社'], correctOption: 'A' },
+            { id: 34, category: '時事', type: 'mc', question: '2025年1月15日，房委會一項有獎計劃正式實施，請問該計劃名稱是?', options: ['A. 屋邨管理服務承辦商大獎', 'B. 舉報濫用公屋獎', 'C. 投票參與度大獎', 'D. 優質公共房屋建造及保養維修大獎'], correctOption: 'B' },
+            { id: 35, category: '數學科', type: 'text', question: '若 a=3 且 b=-2，求 2a - 4b 的值。', answer: '14', supplement: '2(3)-4(-2)=6+8=14' },
+            { id: 36, category: '地理科', type: 'text', question: '季風是指哪兩種季風?', answer: '向岸風和離岸風' },
+            { id: 37, category: '中史科', type: 'mc', question: '袁世凱復辟的中華帝國年號是甚麼?', options: ['A. 洪武', 'B. 洪憲', 'C. 洪熙', 'D. 洪化'], correctOption: 'B' },
+            { id: 38, category: '時事', type: 'mc', question: '2026年世界盃足球賽(FIFA World Cup)將由哪三個國家共同舉辦?', options: ['A. 巴西、阿根廷、智利', 'B. 美國、加拿大、墨西哥', 'C. 德國、法國、意大利', 'D. 澳洲、新西蘭、斐濟'], correctOption: 'B' },
+            { id: 39, category: '視藝科', type: 'mc', question: '以下哪一項不是冷色?', options: ['A. 藍色', 'B. 綠色', 'C. 黃色', 'D. 青色'], correctOption: 'C' },
+            { id: 40, category: '佛學科', type: 'mc', question: '根據四聖諦的內容，佛教認為眾生主要有多少種苦惱?', options: ['A. 5種', 'B. 6種', 'C. 7種', 'D. 8種'], correctOption: 'D' }
+        ];
+
+        // -----------------------------------------------------------------------------
+        // 主程式組件
+        // -----------------------------------------------------------------------------
+        const App = () => {
+            const [viewMode, setViewMode] = useState('MAIN_MENU'); 
+            const [currentSet, setCurrentSet] = useState(null); 
+            const [questionIndex, setQuestionIndex] = useState(0);
+            const [isRevealed, setIsRevealed] = useState(false);
+            
+            // 新增：紀錄選擇的選項、回顧模式與回合一完成紀錄
+            const [selectedOptions, setSelectedOptions] = useState({});
+            const [isReviewMode, setIsReviewMode] = useState(false);
+            const [round1History, setRound1History] = useState({ A: null, B: null, C: null, D: null });
+            
+            const [results, setResults] = useState({});
+            const [showSummary, setShowSummary] = useState(false);
+            const [activeQuestions, setActiveQuestions] = useState([]);
+
+            const [scores, setScores] = useState({ red: 200, yellow: 200, blue: 200, green: 200 });
+            const [scoreAnimations, setScoreAnimations] = useState({});
+            const [round1BonusGiven, setRound1BonusGiven] = useState(false); 
+
+            // 新增：監聽題號切換，還原該題的作答與顯示狀態
+            useEffect(() => {
+                if (activeQuestions.length === 0) return;
+                if (isReviewMode) {
+                    setIsRevealed(true);
+                } else {
+                    setIsRevealed(!!results[questionIndex]);
+                }
+            }, [questionIndex, activeQuestions, isReviewMode, results]);
+
+            const resetGameState = () => {
+                setQuestionIndex(0);
+                setIsRevealed(false);
+                setSelectedOptions({});
+                setResults({});
+                setShowSummary(false);
+                setRound1BonusGiven(false);
+                setIsReviewMode(false);
+            };
+
+            useEffect(() => {
+                resetGameState();
+            }, [activeQuestions]);
+
+            const handleMainMenu = () => setViewMode('MAIN_MENU');
+
+            const goToRound1Menu = () => {
+                setViewMode('ROUND_1_MENU');
+                setCurrentSet(null);
+                resetGameState();
+            };
+
+            const startRound1Set = (set) => {
+                if (round1History[set]) {
+                    // 已完成：直接讀取歷史紀錄並跳至成績頁
+                    setCurrentSet(set);
+                    setActiveQuestions(ROUND_1_DATA[set]);
+                    setResults(round1History[set].results);
+                    setSelectedOptions(round1History[set].selectedOptions);
+                    setRound1BonusGiven(round1History[set].bonusGiven);
+                    setIsReviewMode(false);
+                    setViewMode('ROUND_1_GAME');
+                    setShowSummary(true);
+                } else {
+                    // 未完成：開啟全新回合
+                    resetGameState();
+                    setCurrentSet(set);
+                    setActiveQuestions(ROUND_1_DATA[set]);
+                    setViewMode('ROUND_1_GAME');
+                }
+            };
+
+            const startRound2 = () => {
+                resetGameState();
+                // 由於 ROUND_2_DATA 是固定的靜態陣列，確保了每次進入第二回合的題目順序均完全相同
+                setActiveQuestions(ROUND_2_DATA);
+                setViewMode('ROUND_2_GAME');
+            };
+
+            const handleNext = () => {
+                if (questionIndex < activeQuestions.length - 1) {
+                    setQuestionIndex(prev => prev + 1);
+                } else {
+                    setShowSummary(true);
+                    // 第一回合完成時，寫入歷史紀錄
+                    if (viewMode === 'ROUND_1_GAME' && !isReviewMode && currentSet) {
+                        setRound1History(prev => ({
+                            ...prev,
+                            [currentSet]: { results, selectedOptions, bonusGiven: round1BonusGiven }
+                        }));
+                    }
+                }
+            };
+
+            const handlePrev = () => {
+                if (questionIndex > 0) {
+                    setQuestionIndex(prev => prev - 1);
+                }
+            };
+
+            const handleOptionClick = (optionLabel) => {
+                if (isRevealed || isReviewMode) return;
+                const currentQuestion = activeQuestions[questionIndex];
+                const letter = optionLabel.charAt(0); 
+                
+                setSelectedOptions(prev => ({ ...prev, [questionIndex]: letter }));
+                setIsRevealed(true);
+                const isCorrect = letter === currentQuestion.correctOption;
+                setResults(prev => ({ ...prev, [questionIndex]: isCorrect ? 'correct' : 'incorrect' }));
+            };
+
+            const handleShowAnswer = () => setIsRevealed(true);
+
+            const handleTextJudge = (isCorrect) => {
+                if (isReviewMode) return;
+                setResults(prev => ({ ...prev, [questionIndex]: isCorrect ? 'correct' : 'incorrect' }));
+            };
+
+            const awardRound1Points = (houseId) => {
+                if (round1BonusGiven) return;
+                const correctCount = Object.values(results).filter(r => r === 'correct').length;
+                const pointsToAdd = correctCount * 10;
+                
+                if (pointsToAdd > 0) {
+                    adjustScore(houseId, pointsToAdd);
+                } else {
+                    alert("本回合沒有得分可加。");
+                }
+                
+                setRound1BonusGiven(true);
+                
+                // 紀錄加分對象
+                if (viewMode === 'ROUND_1_GAME' && currentSet) {
+                    setRound1History(prev => ({
+                        ...prev,
+                        [currentSet]: { ...prev[currentSet], bonusGiven: true, awardedHouse: houseId }
+                    }));
+                }
+            };
+
+            const adjustScore = (houseId, amount) => {
+                setScores(prev => ({
+                    ...prev,
+                    [houseId]: prev[houseId] + amount
+                }));
+
+                const animId = Date.now();
+                setScoreAnimations(prev => ({
+                    ...prev,
+                    [houseId]: { amount: amount, id: animId }
+                }));
+
+                setTimeout(() => {
+                    setScoreAnimations(prev => {
+                        if (prev[houseId] && prev[houseId].id === animId) {
+                            const newState = { ...prev };
+                            delete newState[houseId];
+                            return newState;
+                        }
+                        return prev;
+                    });
+                }, 1000);
+            };
+
+            // --- UI 渲染區塊 ---
+
+            // 計分板組件
+            const ScoreBoard = () => (
+                <div className="flex justify-center gap-4 p-4 mt-auto mb-4 z-20">
+                    {HOUSES.map(house => (
+                        <div key={house.id} className={`relative flex-1 max-w-[200px] bright-card p-4 text-center ${scoreAnimations[house.id] ? 'animate-score-bump' : ''}`}>
+                            <h3 className={`text-2xl font-bold mb-2 ${house.text}`}>{house.name}</h3>
+                            <div className="text-5xl font-black mb-3">{scores[house.id]}</div>
+
+                            {/* 分數動畫浮動效果 */}
+                            {scoreAnimations[house.id] && (
+                                <div className={`absolute top-0 left-1/2 text-4xl font-bold text-stroke animate-score-float ${scoreAnimations[house.id].amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {scoreAnimations[house.id].amount > 0 ? '+' : ''}{scoreAnimations[house.id].amount}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            );
+
+            // 主選單
+            const renderMainMenu = () => (
+                <div 
+                    className="flex-1 w-full flex flex-col justify-center items-center animate-fade-in-down p-8 relative bg-cover bg-center"
+                    style={{ backgroundImage: `url('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/%E5%AF%B6%E8%A6%BA%E4%B8%AD%E5%AD%B8.JPG/1280px-%E5%AF%B6%E8%A6%BA%E4%B8%AD%E5%AD%B8.JPG')` }}
+                >
+                    {/* 半透明遮罩，稍微降低透明度讓背景更明顯 */}
+                    <div className="absolute inset-0 bg-white/20 backdrop-blur-sm z-0"></div>
+                    
+                    {/* 標題獨立顯示並加大，加入強烈白色發光以確保閱讀性 */}
+                    <h1 className="text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-800 to-purple-800 mb-12 z-10 relative mt-auto text-center drop-shadow-[0_0_15px_rgba(255,255,255,0.9)]">
+                        四社高中問答比賽
+                    </h1>
+                    
+                    {/* 刪除外層大長方卡片，改為直接放置半透明毛玻璃按鈕卡片 */}
+                    <div className="grid grid-cols-2 gap-8 w-full max-w-4xl mb-10 z-10 relative">
+                        <button onClick={goToRound1Menu} className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl p-12 rounded-3xl flex flex-col items-center justify-center gap-4 group hover:scale-105 hover:bg-white/50 transition-all">
+                            <BookOpen size={64} className="text-indigo-800 transition-transform group-hover:-translate-y-2" />
+                            <span className="text-4xl font-bold text-indigo-900 drop-shadow-sm">第一回合：必答題</span>
+                        </button>
+                        <button onClick={startRound2} className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl p-12 rounded-3xl flex flex-col items-center justify-center gap-4 group hover:scale-105 hover:bg-white/50 transition-all">
+                            <Zap size={64} className="text-indigo-800 transition-transform group-hover:-translate-y-2" />
+                            <span className="text-4xl font-bold text-indigo-900 drop-shadow-sm">第二回合：搶答題</span>
+                        </button>
+                    </div>
+                    
+                    <div className="z-10 w-full relative mt-auto">
+                        <ScoreBoard />
+                    </div>
+                </div>
+            );
+
+            // 第一回合選單
+            const renderRound1Menu = () => (
+                <div className="flex-1 flex flex-col p-8 animate-fade-in-up">
+                    <button onClick={handleMainMenu} className="self-start mb-6 flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur">
+                        <Home size={24} /> 返回主選單
+                    </button>
+                    
+                    <div className="flex-1 flex flex-col justify-center items-center">
+                        <h2 className="text-5xl font-black text-indigo-800 mb-10">請選擇必答題套組</h2>
+                        <div className="grid grid-cols-2 gap-8 w-full max-w-4xl">
+                            {['A', 'B', 'C', 'D'].map(set => {
+                                const isCompleted = !!round1History[set];
+                                return (
+                                    <button 
+                                        key={set} 
+                                        onClick={() => startRound1Set(set)} 
+                                        className={`bright-card p-12 text-5xl font-black flex justify-center items-center transition-all ${isCompleted ? 'bg-gray-200 text-gray-500 opacity-80' : 'bright-card-hover text-indigo-600'}`}
+                                    >
+                                        Set {set} {isCompleted && <span className="text-2xl ml-4 font-bold text-gray-500">(已完成)</span>}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // 遊戲總結頁面
+            const renderSummary = () => {
+                const correctCount = Object.values(results).filter(r => r === 'correct').length;
+                const totalPoints = correctCount * 10;
+                const isRound1 = viewMode === 'ROUND_1_GAME';
+                const historyData = isRound1 ? round1History[currentSet] : null;
+                const awardedHouseName = historyData?.awardedHouse ? HOUSES.find(h => h.id === historyData.awardedHouse)?.name : null;
+
+                return (
+                    <div className="flex-1 flex flex-col p-8 animate-fade-in-up">
+                         <div className="flex gap-4 self-start mb-6">
+                             <button onClick={handleMainMenu} className="flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur">
+                                <Home size={24} /> 返回主選單
+                            </button>
+                            {isRound1 && (
+                                <button onClick={goToRound1Menu} className="flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur">
+                                    <ChevronLeft size={24} /> 返回題庫選單
+                                </button>
+                            )}
+                        </div>
+                        
+                        <div className="flex-1 flex flex-col justify-center items-center">
+                            <div className="bright-card p-12 w-full max-w-4xl text-center">
+                                <Trophy size={80} className="mx-auto text-yellow-500 mb-6" />
+                                <h2 className="text-5xl font-black text-gray-800 mb-6">
+                                    {isRound1 ? `第一回合 Set ${currentSet} 完成` : '第二回合 完成'}
+                                </h2>
+                                
+                                {isRound1 && (
+                                    <>
+                                        <p className="text-3xl text-gray-600 mb-8">
+                                            共答對 <span className="text-green-600 font-bold">{correctCount}</span> 題，可獲得 <span className="text-indigo-600 font-bold">{totalPoints}</span> 分
+                                        </p>
+                                        {!round1BonusGiven ? (
+                                            <div className="mt-8">
+                                                <p className="text-xl text-gray-500 mb-4">請選擇加分對象：</p>
+                                                <div className="flex justify-center gap-4">
+                                                    {HOUSES.map(house => (
+                                                        <button key={house.id} onClick={() => awardRound1Points(house.id)} className={`${house.color} px-6 py-3 rounded-xl text-2xl font-bold shadow-lg hover:brightness-110 transition`}>
+                                                            加給 {house.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-2xl text-green-600 font-bold mt-8 flex items-center justify-center gap-2">
+                                                <CheckCircle size={32} /> 已完成加分 {awardedHouseName ? `(${awardedHouseName})` : ''}
+                                            </p>
+                                        )}
+                                        
+                                        <div className="mt-10 flex justify-center">
+                                            <button onClick={() => { setIsReviewMode(true); setShowSummary(false); setQuestionIndex(0); }} className="gradient-btn px-8 py-4 rounded-xl text-2xl font-bold flex items-center gap-3">
+                                                <Eye size={28} /> 回顧答題結果
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // 遊戲進行畫面 (問題展示)
+            const renderGame = () => {
+                if (activeQuestions.length === 0) return null;
+                const question = activeQuestions[questionIndex];
+                const isRound1 = viewMode === 'ROUND_1_GAME';
+                const currentResult = results[questionIndex];
+
+                return (
+                    <div className="flex-1 flex flex-col p-8 relative h-full">
+                        {/* 頂部導航與進度 */}
+                        <div className="flex justify-between items-center mb-8">
+                            <button onClick={handleMainMenu} className="flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur">
+                                <Home size={24} /> 返回主選單
+                            </button>
+                            <div className="flex items-center gap-4">
+                                <span className="px-6 py-2 bg-indigo-100 text-indigo-800 text-2xl font-bold rounded-full">
+                                    {isRound1 ? `必答題 Set ${currentSet}` : '搶答題'}
+                                    {isReviewMode && ' (回顧模式)'}
+                                </span>
+                                <span className="text-2xl font-black text-gray-500">
+                                    {questionIndex + 1} / {activeQuestions.length}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* 進度圓點指示器 */}
+                        <div className="flex flex-wrap justify-center items-center gap-3 mb-6 max-w-4xl mx-auto">
+                            {activeQuestions.map((_, idx) => {
+                                const res = results[idx];
+                                let bgClass = "bg-gray-300"; 
+                                if (res === 'correct') bgClass = "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]";
+                                if (res === 'incorrect') bgClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+                                
+                                let dotClass = `w-4 h-4 rounded-full transition-all duration-300 ${bgClass} `;
+                                if (idx === questionIndex) {
+                                    dotClass += "ring-4 ring-indigo-400 ring-offset-2 scale-125 ";
+                                }
+                                
+                                const clickableClass = isReviewMode ? "cursor-pointer hover:scale-110" : "";
+                                
+                                return <div key={idx} className={`${dotClass} ${clickableClass}`} onClick={() => isReviewMode && setQuestionIndex(idx)}></div>
+                            })}
+                        </div>
+
+                        {/* 問題卡片 */}
+                        <div className="flex-1 flex flex-col justify-center max-w-6xl w-full mx-auto">
+                            <div className="bright-card p-10 mb-8 animate-fade-in-down">
+                                <div className="inline-block px-4 py-1 bg-indigo-500 text-white rounded-full text-lg font-bold mb-6">
+                                    {question.category}
+                                </div>
+                                <h2 className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight">
+                                    {questionIndex + 1}. {question.question}
+                                </h2>
+                            </div>
+
+                            {/* 選項或文字題答案區 */}
+                            <div className="grid grid-cols-1 gap-4 animate-fade-in-up">
+                                {question.type === 'mc' ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {question.options.map((option, idx) => {
+                                            const letter = option.charAt(0);
+                                            const currentSelectedOption = selectedOptions[questionIndex];
+                                            const isCorrectOption = letter === question.correctOption;
+                                            const isSelected = currentSelectedOption === letter;
+                                            
+                                            let optionClass = "bright-card p-6 text-3xl font-bold text-left transition-all ";
+                                            if (isRevealed || isReviewMode) {
+                                                optionClass += "cursor-default ";
+                                                if (isCorrectOption) {
+                                                    optionClass += "bg-green-100 border-green-500 text-green-800 shadow-[0_0_20px_rgba(34,197,94,0.4)] transform scale-[1.02] ";
+                                                } else if (isSelected) {
+                                                    optionClass += "bg-red-100 border-red-500 text-red-800 ";
+                                                } else {
+                                                    optionClass += "opacity-50 ";
+                                                }
+                                            } else {
+                                                optionClass += "hover:border-indigo-400 cursor-pointer ";
+                                            }
+
+                                            return (
+                                                <button key={idx} onClick={() => handleOptionClick(option)} className={optionClass}>
+                                                    {option}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center">
+                                        {!isRevealed ? (
+                                            <button onClick={handleShowAnswer} className="gradient-btn px-12 py-6 rounded-2xl text-4xl font-bold flex items-center gap-4">
+                                                <Eye size={40} /> 顯示答案
+                                            </button>
+                                        ) : (
+                                            <div className="bright-card bg-indigo-50 w-full p-8 text-center border-indigo-300">
+                                                <p className="text-5xl font-black text-indigo-700 mb-4">{question.answer}</p>
+                                                {question.supplement && (
+                                                    <p className="text-2xl text-gray-600 mt-4 bg-white/50 p-4 rounded-xl inline-block">{question.supplement}</p>
+                                                )}
+                                                
+                                                {/* 回合一的文字題需要手動評判對錯 */}
+                                                {isRound1 && !isReviewMode && (
+                                                    <div className="flex justify-center gap-6 mt-8">
+                                                        <button onClick={() => handleTextJudge(true)} className={`px-8 py-4 rounded-xl text-3xl font-bold flex items-center gap-2 transition ${currentResult === 'correct' ? 'bg-green-500 text-white shadow-lg scale-110' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}>
+                                                            <CheckCircle size={32} /> 答對
+                                                        </button>
+                                                        <button onClick={() => handleTextJudge(false)} className={`px-8 py-4 rounded-xl text-3xl font-bold flex items-center gap-2 transition ${currentResult === 'incorrect' ? 'bg-red-500 text-white shadow-lg scale-110' : 'bg-white border-2 border-red-500 text-red-600 hover:bg-red-50'}`}>
+                                                            <XCircle size={32} /> 答錯
+                                                        </button>
+                                                    </div>
+                                                )}
+
+                                                {/* 回顧模式顯示作答結果 */}
+                                                {isRound1 && isReviewMode && (
+                                                    <div className="mt-8">
+                                                        {currentResult === 'correct' ? (
+                                                            <div className="text-3xl text-green-600 font-bold flex items-center justify-center gap-2"><CheckCircle size={36}/> 標記為：答對</div>
+                                                        ) : currentResult === 'incorrect' ? (
+                                                            <div className="text-3xl text-red-600 font-bold flex items-center justify-center gap-2"><XCircle size={36}/> 標記為：答錯</div>
+                                                        ) : (
+                                                            <div className="text-3xl text-gray-500 font-bold flex items-center justify-center gap-2"><Minus size={36}/> 未作答 / 已跳過</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 底部控制按鈕 */}
+                        <div className="flex justify-between mt-auto mb-4 px-8 w-full max-w-6xl mx-auto z-20 relative">
+                            <button onClick={handlePrev} disabled={questionIndex === 0} className={`flex items-center gap-2 px-8 py-4 rounded-xl text-2xl font-bold transition ${questionIndex === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 shadow-md hover:bg-indigo-50'}`}>
+                                <ChevronLeft size={28} /> 上一題
+                            </button>
+                            
+                            <button onClick={handleNext} className="flex items-center gap-2 px-8 py-4 rounded-xl text-2xl font-bold transition gradient-btn">
+                                {questionIndex === activeQuestions.length - 1 ? (isReviewMode ? '返回總結' : '完成回合') : '下一題'} <ChevronRight size={28} />
+                            </button>
+                        </div>
+                        
+                        {/* 遊戲進行中顯示縮小的計分板 */}
+                        <div className="absolute bottom-4 right-8 bg-white/80 backdrop-blur rounded-2xl p-4 shadow-xl border border-white flex gap-4 transform scale-75 origin-bottom-right z-30">
+                             {HOUSES.map(house => (
+                                <div key={house.id} className="text-center w-20">
+                                    <div className={`text-sm font-bold ${house.text}`}>{house.name}</div>
+                                    <div className="text-2xl font-black">{scores[house.id]}</div>
+                                    {!isRound1 && (
+                                        <div className="flex justify-center gap-1 mt-1">
+                                            <button onClick={() => adjustScore(house.id, -10)} className="w-6 h-6 bg-red-100 text-red-600 rounded flex items-center justify-center"><Minus size={14}/></button>
+                                            <button onClick={() => adjustScore(house.id, 10)} className="w-6 h-6 bg-green-100 text-green-600 rounded flex items-center justify-center"><Plus size={14}/></button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            };
+
+            // 根據狀態渲染不同畫面
+            return (
+                <div className="h-full w-full flex flex-col">
+                    {viewMode === 'MAIN_MENU' && renderMainMenu()}
+                    {viewMode === 'ROUND_1_MENU' && renderRound1Menu()}
+                    {(viewMode === 'ROUND_1_GAME' || viewMode === 'ROUND_2_GAME') && !showSummary && renderGame()}
+                    {showSummary && renderSummary()}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
