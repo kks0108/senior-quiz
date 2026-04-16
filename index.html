@@ -329,7 +329,11 @@
                 resetGameState();
             }, [activeQuestions]);
 
-            const handleMainMenu = () => setViewMode('MAIN_MENU');
+            // 修復：確保返回主選單時，一併關閉 Summary 畫面
+            const handleMainMenu = () => {
+                setViewMode('MAIN_MENU');
+                setShowSummary(false);
+            };
 
             const goToRound1Menu = () => {
                 setViewMode('ROUND_1_MENU');
@@ -775,7 +779,7 @@
                     {viewMode === 'MAIN_MENU' && renderMainMenu()}
                     {viewMode === 'ROUND_1_MENU' && renderRound1Menu()}
                     {(viewMode === 'ROUND_1_GAME' || viewMode === 'ROUND_2_GAME') && !showSummary && renderGame()}
-                    {showSummary && renderSummary()}
+                    {(viewMode === 'ROUND_1_GAME' || viewMode === 'ROUND_2_GAME') && showSummary && renderSummary()}
                 </div>
             );
         };
