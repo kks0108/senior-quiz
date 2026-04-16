@@ -74,6 +74,10 @@
         }
         body::-webkit-scrollbar { display: none; }
         
+        /* 隱藏區塊內的滾動條 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
         button:active { transform: scale(0.96); }
 
         /* --- 全新高中主題：成熟冷靜背景 + 寶覺中學圖片 --- */
@@ -449,15 +453,15 @@
 
             // 計分板組件
             const ScoreBoard = () => (
-                <div className="flex justify-center gap-4 p-4 mt-auto mb-4 z-20">
+                <div className="flex justify-center gap-2 md:gap-4 p-2 md:p-4 mt-auto mb-2 md:mb-4 z-20 shrink-0 w-full">
                     {HOUSES.map(house => (
-                        <div key={house.id} className={`relative flex-1 max-w-[200px] bright-card p-4 text-center ${scoreAnimations[house.id] ? 'animate-score-bump' : ''}`}>
-                            <h3 className={`text-2xl font-bold mb-2 ${house.text}`}>{house.name}</h3>
-                            <div className="text-5xl font-black mb-3">{scores[house.id]}</div>
+                        <div key={house.id} className={`relative flex-1 max-w-[160px] md:max-w-[200px] bright-card p-3 md:p-4 text-center ${scoreAnimations[house.id] ? 'animate-score-bump' : ''}`}>
+                            <h3 className={`text-xl md:text-2xl font-bold mb-1 md:mb-2 ${house.text}`}>{house.name}</h3>
+                            <div className="text-4xl md:text-5xl font-black mb-2">{scores[house.id]}</div>
 
                             {/* 分數動畫浮動效果 */}
                             {scoreAnimations[house.id] && (
-                                <div className={`absolute top-0 left-1/2 text-4xl font-bold text-stroke animate-score-float ${scoreAnimations[house.id].amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                <div className={`absolute top-0 left-1/2 text-3xl md:text-4xl font-bold text-stroke animate-score-float ${scoreAnimations[house.id].amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
                                     {scoreAnimations[house.id].amount > 0 ? '+' : ''}{scoreAnimations[house.id].amount}
                                 </div>
                             )}
@@ -469,30 +473,30 @@
             // 主選單
             const renderMainMenu = () => (
                 <div 
-                    className="flex-1 w-full flex flex-col justify-center items-center animate-fade-in-down p-8 relative bg-cover bg-center"
+                    className="flex-1 w-full flex flex-col justify-center items-center animate-fade-in-down p-4 md:p-8 relative bg-cover bg-center overflow-hidden"
                     style={{ backgroundImage: `url('https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/%E5%AF%B6%E8%A6%BA%E4%B8%AD%E5%AD%B8.JPG/1280px-%E5%AF%B6%E8%A6%BA%E4%B8%AD%E5%AD%B8.JPG')` }}
                 >
                     {/* 半透明遮罩，稍微降低透明度讓背景更明顯 */}
                     <div className="absolute inset-0 bg-white/20 backdrop-blur-sm z-0"></div>
                     
-                    {/* 標題獨立顯示並加大，加入強烈白色發光以確保閱讀性 */}
-                    <h1 className="text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-800 to-purple-800 mb-12 z-10 relative mt-auto text-center drop-shadow-[0_0_15px_rgba(255,255,255,0.9)]">
+                    {/* 標題獨立顯示並加大，加入強烈白色發光以確保閱讀性。縮小垂直間距以適應iPad */}
+                    <h1 className="text-6xl md:text-7xl lg:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-800 to-purple-800 mb-8 md:mb-12 z-10 relative mt-auto text-center drop-shadow-[0_0_15px_rgba(255,255,255,0.9)]">
                         四社高中問答比賽
                     </h1>
                     
-                    {/* 刪除外層大長方卡片，改為直接放置半透明毛玻璃按鈕卡片 */}
-                    <div className="grid grid-cols-2 gap-8 w-full max-w-4xl mb-10 z-10 relative">
-                        <button onClick={goToRound1Menu} className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl p-12 rounded-3xl flex flex-col items-center justify-center gap-4 group hover:scale-105 hover:bg-white/50 transition-all">
-                            <BookOpen size={64} className="text-indigo-800 transition-transform group-hover:-translate-y-2" />
-                            <span className="text-4xl font-bold text-indigo-900 drop-shadow-sm">第一回合：必答題</span>
+                    {/* 刪除外層大長方卡片，改為直接放置半透明毛玻璃按鈕卡片。按鈕尺寸微調 */}
+                    <div className="grid grid-cols-2 gap-6 md:gap-8 w-full max-w-4xl mb-6 md:mb-10 z-10 relative shrink-0 px-4">
+                        <button onClick={goToRound1Menu} className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl p-8 md:p-12 rounded-3xl flex flex-col items-center justify-center gap-4 group hover:scale-105 hover:bg-white/50 transition-all">
+                            <BookOpen size={56} className="text-indigo-800 transition-transform group-hover:-translate-y-2" />
+                            <span className="text-3xl md:text-4xl font-bold text-indigo-900 drop-shadow-sm text-center">第一回合：必答題</span>
                         </button>
-                        <button onClick={startRound2} className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl p-12 rounded-3xl flex flex-col items-center justify-center gap-4 group hover:scale-105 hover:bg-white/50 transition-all">
-                            <Zap size={64} className="text-indigo-800 transition-transform group-hover:-translate-y-2" />
-                            <span className="text-4xl font-bold text-indigo-900 drop-shadow-sm">第二回合：搶答題</span>
+                        <button onClick={startRound2} className="bg-white/40 backdrop-blur-md border border-white/60 shadow-xl p-8 md:p-12 rounded-3xl flex flex-col items-center justify-center gap-4 group hover:scale-105 hover:bg-white/50 transition-all">
+                            <Zap size={56} className="text-indigo-800 transition-transform group-hover:-translate-y-2" />
+                            <span className="text-3xl md:text-4xl font-bold text-indigo-900 drop-shadow-sm text-center">第二回合：搶答題</span>
                         </button>
                     </div>
                     
-                    <div className="z-10 w-full relative mt-auto">
+                    <div className="z-10 w-full relative mt-auto shrink-0">
                         <ScoreBoard />
                     </div>
                 </div>
@@ -596,27 +600,27 @@
                 const currentResult = results[questionIndex];
 
                 return (
-                    <div className="flex-1 flex flex-col p-8 relative h-full">
+                    <div className="flex-1 flex flex-col p-4 md:p-6 relative h-full min-h-0 overflow-hidden">
                         {/* 頂部導航與進度 */}
-                        <div className="flex justify-between items-start mb-6 gap-4">
-                            <button onClick={handleMainMenu} className="mt-2 flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur shrink-0">
+                        <div className="flex justify-between items-start mb-4 gap-4 shrink-0">
+                            <button onClick={handleMainMenu} className="mt-2 flex items-center gap-2 text-lg md:text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur shrink-0">
                                 <Home size={24} /> 返回主選單
                             </button>
                             
-                            {/* 第二回合：置中大型計分板 */}
+                            {/* 第二回合：置中大型計分板。尺寸微調以節省垂直空間 */}
                             {!isRound1 && (
-                                <div className="flex justify-center gap-6 bg-white/80 backdrop-blur-md rounded-3xl p-4 shadow-xl border border-white/60 relative z-40 animate-fade-in-down">
+                                <div className="flex justify-center gap-4 md:gap-6 bg-white/80 backdrop-blur-md rounded-3xl p-3 md:p-4 shadow-xl border border-white/60 relative z-40 animate-fade-in-down shrink-0">
                                      {HOUSES.map(house => (
-                                        <div key={house.id} className={`text-center w-28 relative ${scoreAnimations[house.id] ? 'animate-score-bump' : ''}`}>
-                                            <div className={`text-xl font-bold ${house.text}`}>{house.name}</div>
-                                            <div className="text-5xl font-black my-2">{scores[house.id]}</div>
-                                            <div className="flex justify-center gap-3 mt-3">
-                                                <button onClick={() => adjustScore(house.id, -10)} className="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-all hover:scale-110 active:scale-95"><Minus size={24}/></button>
-                                                <button onClick={() => adjustScore(house.id, 10)} className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200 transition-all hover:scale-110 active:scale-95"><Plus size={24}/></button>
+                                        <div key={house.id} className={`text-center w-24 md:w-28 relative ${scoreAnimations[house.id] ? 'animate-score-bump' : ''}`}>
+                                            <div className={`text-lg md:text-xl font-bold ${house.text}`}>{house.name}</div>
+                                            <div className="text-4xl md:text-5xl font-black my-1 md:my-2">{scores[house.id]}</div>
+                                            <div className="flex justify-center gap-2 md:gap-3 mt-2 md:mt-3">
+                                                <button onClick={() => adjustScore(house.id, -10)} title="答錯 -10分" className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center hover:bg-red-200 transition-all hover:scale-110 active:scale-95"><Minus size={20}/></button>
+                                                <button onClick={() => adjustScore(house.id, 20)} title="答對 +20分" className="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center hover:bg-green-200 transition-all hover:scale-110 active:scale-95"><Plus size={20}/></button>
                                             </div>
                                             {/* 分數動畫浮動效果 (大型) */}
                                             {scoreAnimations[house.id] && (
-                                                <div className={`absolute top-[-20px] left-1/2 text-6xl font-black text-stroke z-50 animate-score-float pointer-events-none ${scoreAnimations[house.id].amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                <div className={`absolute top-[-20px] left-1/2 text-5xl md:text-6xl font-black text-stroke z-50 animate-score-float pointer-events-none ${scoreAnimations[house.id].amount > 0 ? 'text-green-500' : 'text-red-500'}`}>
                                                     {scoreAnimations[house.id].amount > 0 ? '+' : ''}{scoreAnimations[house.id].amount}
                                                 </div>
                                             )}
@@ -626,65 +630,67 @@
                             )}
 
                             <div className="mt-2 flex flex-col items-end gap-2 shrink-0">
-                                <span className="px-6 py-2 bg-indigo-100 text-indigo-800 text-2xl font-bold rounded-full">
+                                <span className="px-4 md:px-6 py-2 bg-indigo-100 text-indigo-800 text-xl md:text-2xl font-bold rounded-full">
                                     {isRound1 ? `必答題 Set ${currentSet}` : '搶答題'}
-                                    {isReviewMode && ' (回顧模式)'}
+                                    {isReviewMode && ' (回顧)'}
                                 </span>
-                                <span className="text-2xl font-black text-gray-500 mr-2">
+                                <span className="text-xl md:text-2xl font-black text-gray-500 mr-2">
                                     {questionIndex + 1} / {activeQuestions.length}
                                 </span>
                             </div>
                         </div>
 
-                        {/* 進度圓點指示器 */}
-                        <div className="flex flex-wrap justify-center items-center gap-3 mb-6 max-w-4xl mx-auto">
+                        {/* 進度圓點指示器：縮小點的尺寸與間距 */}
+                        <div className="flex flex-wrap justify-center items-center gap-1.5 md:gap-2 mb-2 md:mb-3 max-w-5xl mx-auto shrink-0 px-2">
                             {activeQuestions.map((_, idx) => {
                                 const res = results[idx];
                                 let bgClass = "bg-gray-300"; 
-                                if (res === 'correct') bgClass = "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)]";
-                                if (res === 'incorrect') bgClass = "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+                                if (res === 'correct') bgClass = "bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.8)]";
+                                if (res === 'incorrect') bgClass = "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]";
                                 
-                                let dotClass = `w-4 h-4 rounded-full transition-all duration-300 ${bgClass} `;
+                                // 縮小為 w-2 h-2 (手機) 及 w-2.5 h-2.5 (iPad/桌面)
+                                let dotClass = `w-2 h-2 md:w-2.5 md:h-2.5 rounded-full transition-all duration-300 ${bgClass} `;
                                 if (idx === questionIndex) {
-                                    dotClass += "ring-4 ring-indigo-400 ring-offset-2 scale-125 ";
+                                    // 縮小當前題目光圈的大小
+                                    dotClass += "ring-2 ring-indigo-400 ring-offset-1 scale-150 ";
                                 }
                                 
-                                const clickableClass = isReviewMode ? "cursor-pointer hover:scale-110" : "";
+                                const clickableClass = isReviewMode ? "cursor-pointer hover:scale-125" : "";
                                 
                                 return <div key={idx} className={`${dotClass} ${clickableClass}`} onClick={() => isReviewMode && setQuestionIndex(idx)}></div>
                             })}
                         </div>
 
-                        {/* 問題卡片 */}
-                        <div className="flex-1 flex flex-col justify-center max-w-6xl w-full mx-auto">
-                            <div className="bright-card p-10 mb-8 animate-fade-in-down">
-                                <div className="inline-block px-4 py-1 bg-indigo-500 text-white rounded-full text-lg font-bold mb-6">
+                        {/* 問題卡片與選項區，加入 min-h-0 和 overflow-y-auto 確保內部可滾動且不推擠底部按鈕 */}
+                        <div className="flex-1 flex flex-col justify-center max-w-6xl w-full mx-auto min-h-0 overflow-y-auto no-scrollbar pb-2 px-2">
+                            <div className="bright-card p-6 md:p-8 mb-4 md:mb-6 animate-fade-in-down shrink-0">
+                                <div className="inline-block px-4 py-1 bg-indigo-500 text-white rounded-full text-base md:text-lg font-bold mb-4">
                                     {question.category}
                                 </div>
                                 {/* 加上 whitespace-pre-wrap 讓多行字串與數學公式能夠正確換行顯示 */}
-                                <h2 className="text-4xl md:text-5xl font-bold text-gray-800 leading-tight whitespace-pre-wrap">
+                                <h2 className="text-3xl md:text-4xl font-bold text-gray-800 leading-tight whitespace-pre-wrap">
                                     {questionIndex + 1}. {question.question}
                                 </h2>
                                 
                                 {/* 數學公式圖片顯示區塊 */}
                                 {question.imageUrl && (
-                                    <div className="mt-8 flex justify-center bg-white/50 p-6 rounded-2xl w-max mx-auto border border-white">
-                                        <img src={question.imageUrl} alt="Math Formula" className="max-h-32 object-contain" />
+                                    <div className="mt-6 flex justify-center bg-white/50 p-4 md:p-6 rounded-2xl w-max mx-auto border border-white">
+                                        <img src={question.imageUrl} alt="Math Formula" className="max-h-24 md:max-h-32 object-contain" />
                                     </div>
                                 )}
                             </div>
 
                             {/* 選項或文字題答案區 */}
-                            <div className="grid grid-cols-1 gap-4 animate-fade-in-up">
+                            <div className="grid grid-cols-1 gap-3 md:gap-4 animate-fade-in-up shrink-0">
                                 {question.type === 'mc' ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                                         {question.options.map((option, idx) => {
                                             const letter = option.charAt(0);
                                             const currentSelectedOption = selectedOptions[questionIndex];
                                             const isCorrectOption = letter === question.correctOption;
                                             const isSelected = currentSelectedOption === letter;
                                             
-                                            let optionClass = "bright-card p-6 text-3xl font-bold text-left transition-all ";
+                                            let optionClass = "bright-card p-4 md:p-5 text-2xl md:text-3xl font-bold text-left transition-all ";
                                             if (isRevealed || isReviewMode) {
                                                 optionClass += "cursor-default ";
                                                 if (isCorrectOption) {
@@ -708,37 +714,37 @@
                                 ) : (
                                     <div className="flex flex-col items-center">
                                         {!isRevealed ? (
-                                            <button onClick={handleShowAnswer} className="gradient-btn px-12 py-6 rounded-2xl text-4xl font-bold flex items-center gap-4">
-                                                <Eye size={40} /> 顯示答案
+                                            <button onClick={handleShowAnswer} className="gradient-btn px-10 py-5 rounded-2xl text-3xl font-bold flex items-center gap-4">
+                                                <Eye size={32} /> 顯示答案
                                             </button>
                                         ) : (
-                                            <div className="bright-card bg-indigo-50 w-full p-8 text-center border-indigo-300">
-                                                <p className="text-5xl font-black text-indigo-700 mb-4">{question.answer}</p>
+                                            <div className="bright-card bg-indigo-50 w-full p-6 text-center border-indigo-300">
+                                                <p className="text-4xl md:text-5xl font-black text-indigo-700 mb-3">{question.answer}</p>
                                                 {question.supplement && (
-                                                    <p className="text-2xl text-gray-600 mt-4 bg-white/50 p-4 rounded-xl inline-block">{question.supplement}</p>
+                                                    <p className="text-xl md:text-2xl text-gray-600 mt-3 bg-white/50 p-3 rounded-xl inline-block">{question.supplement}</p>
                                                 )}
                                                 
                                                 {/* 回合一的文字題需要手動評判對錯 */}
                                                 {isRound1 && !isReviewMode && (
-                                                    <div className="flex justify-center gap-6 mt-8">
-                                                        <button onClick={() => handleTextJudge(true)} className={`px-8 py-4 rounded-xl text-3xl font-bold flex items-center gap-2 transition ${currentResult === 'correct' ? 'bg-green-500 text-white shadow-lg scale-110' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}>
-                                                            <CheckCircle size={32} /> 答對
+                                                    <div className="flex justify-center gap-4 md:gap-6 mt-6">
+                                                        <button onClick={() => handleTextJudge(true)} className={`px-6 py-3 rounded-xl text-2xl font-bold flex items-center gap-2 transition ${currentResult === 'correct' ? 'bg-green-500 text-white shadow-lg scale-110' : 'bg-white border-2 border-green-500 text-green-600 hover:bg-green-50'}`}>
+                                                            <CheckCircle size={28} /> 答對
                                                         </button>
-                                                        <button onClick={() => handleTextJudge(false)} className={`px-8 py-4 rounded-xl text-3xl font-bold flex items-center gap-2 transition ${currentResult === 'incorrect' ? 'bg-red-500 text-white shadow-lg scale-110' : 'bg-white border-2 border-red-500 text-red-600 hover:bg-red-50'}`}>
-                                                            <XCircle size={32} /> 答錯
+                                                        <button onClick={() => handleTextJudge(false)} className={`px-6 py-3 rounded-xl text-2xl font-bold flex items-center gap-2 transition ${currentResult === 'incorrect' ? 'bg-red-500 text-white shadow-lg scale-110' : 'bg-white border-2 border-red-500 text-red-600 hover:bg-red-50'}`}>
+                                                            <XCircle size={28} /> 答錯
                                                         </button>
                                                     </div>
                                                 )}
 
                                                 {/* 回顧模式顯示作答結果 */}
                                                 {isRound1 && isReviewMode && (
-                                                    <div className="mt-8">
+                                                    <div className="mt-6">
                                                         {currentResult === 'correct' ? (
-                                                            <div className="text-3xl text-green-600 font-bold flex items-center justify-center gap-2"><CheckCircle size={36}/> 標記為：答對</div>
+                                                            <div className="text-2xl text-green-600 font-bold flex items-center justify-center gap-2"><CheckCircle size={32}/> 標記為：答對</div>
                                                         ) : currentResult === 'incorrect' ? (
-                                                            <div className="text-3xl text-red-600 font-bold flex items-center justify-center gap-2"><XCircle size={36}/> 標記為：答錯</div>
+                                                            <div className="text-2xl text-red-600 font-bold flex items-center justify-center gap-2"><XCircle size={32}/> 標記為：答錯</div>
                                                         ) : (
-                                                            <div className="text-3xl text-gray-500 font-bold flex items-center justify-center gap-2"><Minus size={36}/> 未作答 / 已跳過</div>
+                                                            <div className="text-2xl text-gray-500 font-bold flex items-center justify-center gap-2"><Minus size={32}/> 未作答 / 已跳過</div>
                                                         )}
                                                     </div>
                                                 )}
@@ -749,14 +755,14 @@
                             </div>
                         </div>
 
-                        {/* 底部控制按鈕 */}
-                        <div className="flex justify-between mt-auto mb-4 px-8 w-full max-w-6xl mx-auto z-20 relative">
-                            <button onClick={handlePrev} disabled={questionIndex === 0} className={`flex items-center gap-2 px-8 py-4 rounded-xl text-2xl font-bold transition ${questionIndex === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 shadow-md hover:bg-indigo-50'}`}>
-                                <ChevronLeft size={28} /> 上一題
+                        {/* 底部控制按鈕，確保一定出現在底部不會被推走 */}
+                        <div className="flex justify-between mt-2 pt-2 pb-2 px-2 md:px-8 w-full max-w-6xl mx-auto z-20 relative shrink-0">
+                            <button onClick={handlePrev} disabled={questionIndex === 0} className={`flex items-center gap-2 px-6 py-3 rounded-xl text-xl md:text-2xl font-bold transition ${questionIndex === 0 ? 'bg-gray-200 text-gray-400 cursor-not-allowed' : 'bg-white text-indigo-600 shadow-md hover:bg-indigo-50'}`}>
+                                <ChevronLeft size={24} /> 上一題
                             </button>
                             
-                            <button onClick={handleNext} className="flex items-center gap-2 px-8 py-4 rounded-xl text-2xl font-bold transition gradient-btn">
-                                {questionIndex === activeQuestions.length - 1 ? (isReviewMode ? '返回總結' : '完成回合') : '下一題'} <ChevronRight size={28} />
+                            <button onClick={handleNext} className="flex items-center gap-2 px-6 py-3 rounded-xl text-xl md:text-2xl font-bold transition gradient-btn">
+                                {questionIndex === activeQuestions.length - 1 ? (isReviewMode ? '返回總結' : '完成回合') : '下一題'} <ChevronRight size={24} />
                             </button>
                         </div>
                     </div>
@@ -765,7 +771,7 @@
 
             // 根據狀態渲染不同畫面
             return (
-                <div className="h-full w-full flex flex-col">
+                <div className="h-full w-full flex flex-col overflow-hidden">
                     {viewMode === 'MAIN_MENU' && renderMainMenu()}
                     {viewMode === 'ROUND_1_MENU' && renderRound1Menu()}
                     {(viewMode === 'ROUND_1_GAME' || viewMode === 'ROUND_2_GAME') && !showSummary && renderGame()}
