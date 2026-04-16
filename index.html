@@ -297,6 +297,10 @@
             const [isReviewMode, setIsReviewMode] = useState(false);
             const [round1History, setRound1History] = useState({ A: null, B: null, C: null, D: null });
             
+            // 新增：抽籤狀態
+            const [drawResult, setDrawResult] = useState(null);
+            const [isDrawing, setIsDrawing] = useState(false);
+
             const [results, setResults] = useState({});
             const [showSummary, setShowSummary] = useState(false);
             const [activeQuestions, setActiveQuestions] = useState([]);
@@ -341,6 +345,31 @@
                 resetGameState();
             };
 
+            // 新增：抽籤邏輯 (加入快速跳動動畫效果)
+            const handleDrawLots = () => {
+                if (isDrawing) return;
+                setIsDrawing(true);
+                let counter = 0;
+                
+                const shuffle = (array) => {
+                    const newArr = [...array];
+                    for (let i = newArr.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+                    }
+                    return newArr;
+                };
+
+                const interval = setInterval(() => {
+                    setDrawResult(shuffle(HOUSES));
+                    counter++;
+                    if (counter > 15) {
+                        clearInterval(interval);
+                        setIsDrawing(false);
+                    }
+                }, 80);
+            };
+
             const startRound1Set = (set) => {
                 if (round1History[set]) {
                     // 已完成：直接讀取歷史紀錄並跳至成績頁
@@ -370,7 +399,10 @@
 
             const handleNext = () => {
                 if (questionIndex < activeQuestions.length - 1) {
-                    setQuestionIndex(prev => prev + 1);
+                    const nextIdx = questionIndex + 1;
+                    setQuestionIndex(nextIdx);
+                    // 同步更新 isRevealed，避免切換題目時舊狀態殘留導致答案閃現
+                    setIsRevealed(isReviewMode ? true : !!results[nextIdx]);
                 } else {
                     setShowSummary(true);
                     // 第一回合完成時，寫入歷史紀錄
@@ -385,7 +417,10 @@
 
             const handlePrev = () => {
                 if (questionIndex > 0) {
-                    setQuestionIndex(prev => prev - 1);
+                    const prevIdx = questionIndex - 1;
+                    setQuestionIndex(prevIdx);
+                    // 同步更新 isRevealed
+                    setIsRevealed(isReviewMode ? true : !!results[prevIdx]);
                 }
             };
 
@@ -509,22 +544,47 @@
             // 第一回合選單
             const renderRound1Menu = () => (
                 <div className="flex-1 flex flex-col p-8 animate-fade-in-up">
-                    <button onClick={handleMainMenu} className="self-start mb-6 flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur">
+                    <button onClick={handleMainMenu} className="self-start mb-4 flex items-center gap-2 text-xl font-bold text-indigo-600 hover:text-indigo-800 bg-white/50 px-4 py-2 rounded-full backdrop-blur">
                         <Home size={24} /> 返回主選單
                     </button>
                     
                     <div className="flex-1 flex flex-col justify-center items-center">
-                        <h2 className="text-5xl font-black text-indigo-800 mb-10">請選擇必答題套組</h2>
-                        <div className="grid grid-cols-2 gap-8 w-full max-w-4xl">
+                        
+                        {/* 抽籤決定選題次序區塊 */}
+                        <div className="mb-8 w-full max-w-4xl flex flex-col items-center bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/60 shadow-lg">
+                            <button 
+                                onClick={handleDrawLots} 
+                                disabled={isDrawing}
+                                className={`gradient-btn px-8 py-3 rounded-xl text-2xl font-bold flex items-center gap-3 mb-6 transition-all ${isDrawing ? 'opacity-80 cursor-not-allowed' : 'hover:scale-105 active:scale-95'}`}
+                            >
+                                <Zap size={28} /> {isDrawing ? '抽籤中...' : '抽籤決定各社選題次序'}
+                            </button>
+                            
+                            <div className="flex justify-center gap-4 w-full h-24">
+                                {drawResult ? drawResult.map((house, index) => (
+                                    <div key={house.id} className={`flex-1 flex flex-col justify-center items-center rounded-xl shadow-md font-bold transition-all ${house.color} text-white ${isDrawing ? 'opacity-80 scale-95' : 'animate-score-bump scale-100'}`}>
+                                        <span className="text-sm md:text-base opacity-90 mb-1">第 {index + 1} 選</span>
+                                        <span className="text-2xl md:text-3xl tracking-widest">{house.name}</span>
+                                    </div>
+                                )) : (
+                                    <div className="flex-1 flex justify-center items-center text-gray-400 text-xl font-bold border-2 border-dashed border-gray-400/50 rounded-xl bg-white/30">
+                                        尚未抽籤
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <h2 className="text-4xl md:text-5xl font-black text-indigo-800 mb-6">請選擇必答題套組</h2>
+                        <div className="grid grid-cols-2 gap-6 w-full max-w-4xl">
                             {['A', 'B', 'C', 'D'].map(set => {
                                 const isCompleted = !!round1History[set];
                                 return (
                                     <button 
                                         key={set} 
                                         onClick={() => startRound1Set(set)} 
-                                        className={`bright-card p-12 text-5xl font-black flex justify-center items-center transition-all ${isCompleted ? 'bg-gray-200 text-gray-500 opacity-80' : 'bright-card-hover text-indigo-600'}`}
+                                        className={`bright-card p-10 md:p-12 text-4xl md:text-5xl font-black flex justify-center items-center transition-all ${isCompleted ? 'bg-gray-200 text-gray-500 opacity-80' : 'bright-card-hover text-indigo-600'}`}
                                     >
-                                        Set {set} {isCompleted && <span className="text-2xl ml-4 font-bold text-gray-500">(已完成)</span>}
+                                        Set {set} {isCompleted && <span className="text-xl md:text-2xl ml-4 font-bold text-gray-500">(已完成)</span>}
                                     </button>
                                 );
                             })}
@@ -661,7 +721,12 @@
                                 
                                 const clickableClass = isReviewMode ? "cursor-pointer hover:scale-125" : "";
                                 
-                                return <div key={idx} className={`${dotClass} ${clickableClass}`} onClick={() => isReviewMode && setQuestionIndex(idx)}></div>
+                                return <div key={idx} className={`${dotClass} ${clickableClass}`} onClick={() => {
+                                    if (isReviewMode) {
+                                        setQuestionIndex(idx);
+                                        setIsRevealed(true);
+                                    }
+                                }}></div>
                             })}
                         </div>
 
