@@ -862,6 +862,13 @@
                 // 根據分數高低進行排序
                 const sortedHouses = [...HOUSES].sort((a, b) => scores[b.id] - scores[a.id]);
                 
+                // 新增：計算同分的並列名次 (標準排名法：如果兩社同為最高分，則並列第1，下一位為第3)
+                const rankedHouses = sortedHouses.map((house) => {
+                    const rankIndex = sortedHouses.findIndex(h => scores[h.id] === scores[house.id]);
+                    const rank = rankIndex + 1;
+                    return { ...house, rank };
+                });
+                
                 // 計算賽事歸納數據
                 const getHouseR1Correct = (houseId) => {
                     let correct = 0;
@@ -883,7 +890,25 @@
                 const r2TotalAnswered = Object.values(round2Correct).reduce((a,b)=>a+b, 0) + Object.values(round2Wrong).reduce((a,b)=>a+b, 0);
                 const grandTotalAnswered = r1TotalAnswered + r2TotalAnswered;
                 
-                const top3 = sortedHouses.slice(0, 3);
+                const top3 = rankedHouses.slice(0, 3);
+
+                // 動態取得獎項樣式
+                const getRankProps = (rank) => {
+                    switch(rank) {
+                        case 1: return { title: "🏆 冠軍", heightClass: "h-36 md:h-56", bgClass: "bg-gradient-to-b from-yellow-300 to-yellow-500", rankNum: "1" };
+                        case 2: return { title: "🥈 亞軍", heightClass: "h-28 md:h-40", bgClass: "bg-gradient-to-b from-gray-200 to-gray-400", rankNum: "2" };
+                        case 3: return { title: "🥉 季軍", heightClass: "h-20 md:h-28", bgClass: "bg-gradient-to-b from-amber-600 to-amber-800", rankNum: "3" };
+                        default: return { title: "🏅 殿軍", heightClass: "h-12 md:h-16", bgClass: "bg-gradient-to-b from-blue-200 to-blue-400", rankNum: "4" };
+                    }
+                };
+
+                // 決定頒獎台的左右排列位置 (排版順序：左(亞)、中(冠)、右(季)、極右(殿))
+                const podiumOrder = [
+                    rankedHouses[1],
+                    rankedHouses[0],
+                    rankedHouses[2],
+                    rankedHouses[3]
+                ];
 
                 // 頒獎台區塊組件 (優化高度與字體以適應 iPad 投影)
                 const PodiumStep = ({ rank, title, house, score, heightClass, bgClass, icon }) => (
@@ -892,7 +917,7 @@
                         <div className="text-lg md:text-xl font-bold text-gray-800 mb-1 drop-shadow-sm bg-white/60 px-3 py-1 rounded-full backdrop-blur-sm">{title}</div>
                         <div className={`text-2xl md:text-4xl font-black mb-1 mt-1 ${house.text} drop-shadow-md`}>{house.name}</div>
                         <div className="text-2xl md:text-3xl font-bold text-indigo-900 drop-shadow-sm">{score}</div>
-                        <div className={`w-20 md:w-32 ${heightClass} ${bgClass} rounded-t-xl mt-2 shadow-[inset_0_4px_10px_rgba(255,255,255,0.6),0_10px_20px_rgba(0,0,0,0.15)] border-t border-white/50 flex justify-center pt-2 relative overflow-hidden`}>
+                        <div className={`w-20 md:w-32 ${heightClass} ${bgClass} rounded-t-xl mt-2 shadow-[inset_0_4px_10px_rgba(255,255,255,0.6),0_10px_20px_rgba(0,0,0,0.15)] border-t border-white/50 flex justify-center pt-2 relative overflow-hidden transition-all duration-500`}>
                             <span className="text-4xl md:text-5xl font-black text-white/40 drop-shadow-sm">{rank}</span>
                         </div>
                     </div>
@@ -913,15 +938,24 @@
                                 賽事最終成績
                             </h1>
 
-                            {/* 立體頒獎台 (排版順序：2, 1, 3, 4) - 高度大幅壓縮以符合單頁投影 */}
+                            {/* 立體頒獎台 (排版順序：2, 1, 3, 4) - 動態處理同分 */}
                             <div className="flex justify-center items-end gap-2 md:gap-5 mt-4 mb-2 w-full shrink-0">
-                                <PodiumStep rank="2" title="🥈 亞軍" house={sortedHouses[1]} score={scores[sortedHouses[1].id]} heightClass="h-28 md:h-40" bgClass="bg-gradient-to-b from-gray-200 to-gray-400" />
-                                
-                                <PodiumStep rank="1" title="🏆 冠軍" house={sortedHouses[0]} score={scores[sortedHouses[0].id]} heightClass="h-36 md:h-56" bgClass="bg-gradient-to-b from-yellow-300 to-yellow-500" icon={<Crown size={48} className="text-yellow-500 mb-1 animate-bounce drop-shadow-[0_5px_10px_rgba(234,179,8,0.5)]" />} />
-                                
-                                <PodiumStep rank="3" title="🥉 季軍" house={sortedHouses[2]} score={scores[sortedHouses[2].id]} heightClass="h-20 md:h-28" bgClass="bg-gradient-to-b from-amber-600 to-amber-800" />
-                                
-                                <PodiumStep rank="4" title="🏅 殿軍" house={sortedHouses[3]} score={scores[sortedHouses[3].id]} heightClass="h-12 md:h-16" bgClass="bg-gradient-to-b from-blue-200 to-blue-400" />
+                                {podiumOrder.map(h => {
+                                    const props = getRankProps(h.rank);
+                                    const isChamp = h.rank === 1;
+                                    return (
+                                        <PodiumStep 
+                                            key={h.id}
+                                            rank={props.rankNum} 
+                                            title={props.title} 
+                                            house={h} 
+                                            score={scores[h.id]} 
+                                            heightClass={props.heightClass} 
+                                            bgClass={props.bgClass} 
+                                            icon={isChamp ? <Crown size={48} className="text-yellow-500 mb-1 animate-bounce drop-shadow-[0_5px_10px_rgba(234,179,8,0.5)]" /> : null} 
+                                        />
+                                    );
+                                })}
                             </div>
 
                             {/* 賽事數據歸納 - 緊湊排版並貼底 (mt-auto) */}
@@ -930,15 +964,15 @@
                                     <BarChart size={28} className="text-indigo-600"/> 賽事數據歸納
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-3 w-full text-center">
-                                    {top3.map((house, idx) => {
+                                    {top3.map((house) => {
                                         const r1C = getHouseR1Correct(house.id);
                                         const r2C = round2Correct[house.id];
-                                        const medals = ['🥇 冠軍', '🥈 亞軍', '🥉 季軍'];
+                                        const rankProps = getRankProps(house.rank);
                                         return (
                                             <div key={house.id} className="bg-white/80 p-3 rounded-2xl shadow-sm border border-indigo-100 flex flex-col justify-center relative overflow-hidden transition-transform hover:scale-105">
                                                 <div className={`absolute top-0 left-0 w-full h-1.5 ${house.color}`}></div>
                                                 <div className="text-gray-700 text-base md:text-lg font-bold mb-2 flex items-center justify-center gap-1 drop-shadow-sm">
-                                                    {medals[idx]} - {house.name}
+                                                    {rankProps.title} - {house.name}
                                                 </div>
                                                 <div className="flex justify-around">
                                                     <div className="text-center">
